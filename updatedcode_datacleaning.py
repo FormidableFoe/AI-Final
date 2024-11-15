@@ -56,7 +56,7 @@ data = pd.read_csv('emg_all_features_labeled.csv', header=None)
 # Remove duplicate rows
 data = data.drop_duplicates()
 
-# Handle missing values (remove rows with any missing values)
+# Remove rows with any missing values
 data = data.dropna()
 
 # Separate features and labels
