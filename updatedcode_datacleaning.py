@@ -53,11 +53,10 @@ import matplotlib.pyplot as plt
 # Load data
 data = pd.read_csv('emg_all_features_labeled.csv', header=None)
 
-# Basic data cleaning
-# 1. Remove duplicate rows
+# Remove duplicate rows
 data = data.drop_duplicates()
 
-# 2. Handle missing values (remove rows with any missing values)
+# Handle missing values (remove rows with any missing values)
 data = data.dropna()
 
 # Separate features and labels
