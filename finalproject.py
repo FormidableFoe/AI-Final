@@ -39,19 +39,25 @@ First 8 columns are standard_deviation, the next 8 columns are root_mean_square 
 Note: You may want to normalize some features because their ranges are dramatically different.
 """
 
-#Run this to upload the CSV file
-from google.colab import files
-uploaded = files.upload()
-
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV, learning_curve
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.metrics import accuracy_score
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 # Load data
 data = pd.read_csv('emg_all_features_labeled.csv', header=None)
+
+# Remove duplicate rows
+data = data.drop_duplicates()
+
+# Remove rows with any missing values
+data = data.dropna()
 
 # Separate features and labels
 X = data.iloc[:, :-1]
@@ -64,16 +70,64 @@ X_normalized = scaler.fit_transform(X)
 # Split data
 X_train, X_test, y_train, y_test = train_test_split(X_normalized, y, test_size=0.3, random_state=42)
 
-# Train model
-model = DecisionTreeClassifier(random_state=42)
-model.fit(X_train, y_train)
+# Decision Tree
+decision_tree = DecisionTreeClassifier(random_state=42)
+decision_tree.fit(X_train, y_train)
+dt_pred = decision_tree.predict(X_test)
+dt_accuracy = accuracy_score(y_test, dt_pred)
 
-# Predict and evaluate
-y_pred = model.predict(X_test)
-accuracy = accuracy_score(y_test, y_pred)
-print(f"Accuracy: {accuracy * 100:.2f}%")
+# Random Forest
+random_forest = RandomForestClassifier(random_state=42, n_estimators=100)
+random_forest.fit(X_train, y_train)
+rf_pred = random_forest.predict(X_test)
+rf_accuracy = accuracy_score(y_test, rf_pred)
 
-# Visualize
-plt.figure(figsize=(15, 10))
-plot_tree(model, filled=True, max_depth=3)
+# Gradient Boosting
+gradient_boosting = GradientBoostingClassifier(random_state=42)
+gradient_boosting.fit(X_train, y_train)
+gb_pred = gradient_boosting.predict(X_test)
+gb_accuracy = accuracy_score(y_test, gb_pred)
+
+# Support Vector Machine (SVM)
+svm = SVC(kernel='linear', random_state=42)
+svm.fit(X_train, y_train)
+svm_pred = svm.predict(X_test)
+svm_accuracy = accuracy_score(y_test, svm_pred)
+
+# Model Comparison
+models = ['Decision Tree', 'Random Forest', 'Gradient Boosting', 'SVM']
+accuracies = [dt_accuracy, rf_accuracy, gb_accuracy, svm_accuracy]
+
+plt.figure(figsize=(10, 6))
+plt.bar(models, accuracies, color='skyblue', edgecolor='black')
+plt.title('Model Accuracy Comparison')
+plt.ylabel('Accuracy')
+plt.xlabel('Models')
+plt.ylim(0, 1)  # Accuracy ranges from 0 to 1
+plt.grid(axis='y')
 plt.show()
+
+# Feature Importance (Random Forest)
+feature_importance = random_forest.feature_importances_
+sorted_idx = np.argsort(feature_importance)[-10:]  # Top 10 features
+plt.figure(figsize=(10, 6))
+plt.barh(range(10), feature_importance[sorted_idx], color='teal', edgecolor='black')
+plt.yticks(range(10), [f"Feature {i}" for i in sorted_idx])
+plt.title('Top 10 Feature Importances (Random Forest)')
+plt.xlabel('Importance Score')
+plt.ylabel('Features')
+plt.grid(axis='x')
+plt.show()
+
+# Confusion Matrix
+cm = confusion_matrix(y_test, rf_pred)
+plt.figure(figsize=(8, 6))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=data.iloc[:, -1].unique(), yticklabels=data.iloc[:, -1].unique())
+plt.title('Confusion Matrix (Random Forest)')
+plt.xlabel('Predicted Labels')
+plt.ylabel('True Labels')
+plt.show()
+
+# Classification Report
+print("Classification Report (Random Forest):")
+print(classification_report(y_test, rf_pred))
